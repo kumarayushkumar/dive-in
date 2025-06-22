@@ -683,6 +683,148 @@ void main() {
     
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }`.trim()
+            },
+            {
+                name: "Nightmare Flesh",
+                vertexShader: vertexShader,
+                fragmentShader: `
+uniform float time;
+uniform vec2 resolution;
+uniform vec2 mouse;
+varying vec2 vUv;
+
+float noise(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+// Disturbing organic noise
+float organicNoise(vec2 st, float t) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+    
+    // Pulsing, breathing randomness
+    float a = noise(i + sin(t * 0.3) * 5.0);
+    float b = noise(i + vec2(1.0, 0.0) + cos(t * 0.4) * 5.0);
+    float c = noise(i + vec2(0.0, 1.0) + sin(t * 0.5) * 5.0);
+    float d = noise(i + vec2(1.0, 1.0) + cos(t * 0.6) * 5.0);
+    
+    // Smooth interpolation with organic curves
+    vec2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    
+    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+
+// Fractal flesh-like noise
+float fleshNoise(vec2 st, float t) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+    
+    for (int i = 0; i < 6; i++) {
+        value += amplitude * organicNoise(st * frequency, t + float(i) * 0.1);
+        frequency *= 2.1;
+        amplitude *= 0.45;
+    }
+    return value;
+}
+
+// Grotesque flesh colors that trigger disgust
+vec3 fleshColors(float t, float corruption) {
+    // Colors of decay, infection, and living flesh
+    vec3 pale_flesh = vec3(0.8, 0.6, 0.5);        // Pale skin
+    vec3 raw_meat = vec3(0.7, 0.2, 0.2);          // Raw flesh
+    vec3 infected_yellow = vec3(0.6, 0.6, 0.1);   // Infection
+    vec3 bruised_purple = vec3(0.4, 0.2, 0.4);    // Bruised flesh
+    vec3 gangrene_black = vec3(0.1, 0.1, 0.05);   // Necrotic tissue
+    vec3 blood_red = vec3(0.8, 0.1, 0.1);         // Fresh blood
+    
+    float flesh_cycle = fract(t * corruption + time * 0.02);
+    
+    if (flesh_cycle < 0.16) return mix(pale_flesh, raw_meat, flesh_cycle * 6.0);
+    else if (flesh_cycle < 0.33) return mix(raw_meat, infected_yellow, (flesh_cycle - 0.16) * 6.0);
+    else if (flesh_cycle < 0.5) return mix(infected_yellow, bruised_purple, (flesh_cycle - 0.33) * 6.0);
+    else if (flesh_cycle < 0.66) return mix(bruised_purple, gangrene_black, (flesh_cycle - 0.5) * 6.0);
+    else if (flesh_cycle < 0.83) return mix(gangrene_black, blood_red, (flesh_cycle - 0.66) * 6.0);
+    else return mix(blood_red, pale_flesh, (flesh_cycle - 0.83) * 6.0);
+}
+
+void main() {
+    vec2 uv = vUv;
+    
+    // Corruption level increases over time
+    float corruption_level = 1.5 + sin(time * 0.03) * 0.8 + time * 0.005;
+    
+    // Flesh-like base texture
+    float flesh_base = fleshNoise(uv * 4.0, time * 0.2);
+    float flesh_detail = fleshNoise(uv * 12.0, time * 0.15);
+    float flesh_fine = fleshNoise(uv * 32.0, time * 0.1);
+    
+    // Pulsing like a heartbeat
+    float heartbeat = sin(time * 4.0) * 0.3 + 0.7;
+    flesh_base *= heartbeat;
+    
+    // Veins and arteries
+    float vein1 = abs(sin(uv.x * 20.0 + time * 0.5 + flesh_base * 5.0) - uv.y * 2.0 + 1.0);
+    float vein2 = abs(cos(uv.y * 15.0 + time * 0.4 + flesh_detail * 4.0) - uv.x * 1.5 + 0.5);
+    
+    float veins = exp(-vein1 * 15.0) + exp(-vein2 * 20.0);
+    
+    // Tumorous growths
+    float tumor1 = exp(-length(uv - vec2(0.3 + sin(time * 0.1) * 0.1, 0.7)) * 8.0);
+    float tumor2 = exp(-length(uv - vec2(0.8, 0.2 + cos(time * 0.13) * 0.1)) * 12.0);
+    float tumor3 = exp(-length(uv - vec2(0.1, 0.4 + sin(time * 0.07) * 0.08)) * 10.0);
+    
+    float tumors = (tumor1 + tumor2 + tumor3) * sin(time * 2.0);
+    
+    // Wounds and lacerations
+    float wound1 = step(0.95, organicNoise(uv * 30.0, time * 1.0));
+    float wound2 = step(0.97, organicNoise(uv * 25.0 + vec2(10.0), time * 0.8));
+    
+    // Maggots and parasites moving
+    float parasite1 = sin(uv.x * 60.0 + time * 3.0 + flesh_base * 20.0);
+    float parasite2 = cos(uv.y * 50.0 + time * 2.5 + flesh_detail * 15.0);
+    float parasites = step(0.9, parasite1) + step(0.92, parasite2);
+    
+    float combined_flesh = flesh_base + flesh_detail * 0.5 + flesh_fine * 0.3;
+    combined_flesh += veins * 0.8;
+    combined_flesh += tumors * 0.6;
+    combined_flesh += (wound1 + wound2) * 0.4;
+    combined_flesh += parasites * 0.3;
+    
+    // Mouse creates infection spread
+    float mouseDist = length(uv - mouse);
+    float infection = exp(-mouseDist * 3.0) * sin(time * 8.0) * corruption_level;
+    combined_flesh += infection * 0.7;
+    
+    // Disgust-inducing flesh colors
+    vec3 color = fleshColors(combined_flesh, corruption_level);
+    
+    // Bleeding effect
+    float bleeding = veins * sin(time * 6.0) * 0.5;
+    color += bleeding * vec3(0.8, 0.1, 0.1);
+    
+    // Infection glow
+    float infection_glow = tumors * sin(time * 3.0) * 0.3;
+    color += infection_glow * vec3(0.6, 0.6, 0.0);
+    
+    // Necrosis spreading
+    float necrosis = step(0.8, combined_flesh) * sin(time * 1.0);
+    color = mix(color, vec3(0.05, 0.05, 0.02), necrosis * 0.6);
+    
+    // Organic breathing effect
+    float breathing = 0.6 + 0.4 * sin(time * 1.5);
+    color *= breathing;
+    
+    // Sickly desaturation
+    float sickness = sin(time * 0.3) * 0.2;
+    color = mix(color, vec3(dot(color, vec3(0.299, 0.587, 0.114))), sickness);
+    
+    // Random spasms and twitches
+    float spasm = step(0.98, organicNoise(vec2(time * 15.0), time));
+    color += spasm * vec3(1.5, 0.5, 0.5);
+    
+    gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+}`.trim()
             }
         ];
     }
