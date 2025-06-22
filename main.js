@@ -9,8 +9,8 @@ class GLSLPlayground {
             antialias: true 
         });
         
-        const canvasWidth = window.innerWidth - 200;
-        this.renderer.setSize(canvasWidth, window.innerHeight);
+        // Canvas is now fullscreen
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
         
         this.geometry = new THREE.PlaneGeometry(2, 2);
         this.material = null;
@@ -19,28 +19,53 @@ class GLSLPlayground {
         this.startTime = Date.now();
         this.uniforms = {
             time: { value: 0.0 },
-            resolution: { value: new THREE.Vector2(canvasWidth, window.innerHeight) },
+            resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
             mouse: { value: new THREE.Vector2(0.5, 0.5) }
         };
         
         this.currentExample = 0;
         this.examples = this.createExamples();
+        this.isControlsVisible = true;
+        this.autoHideTimeout = null;
         
         this.setupEventListeners();
         this.loadExample(0);
         this.animate();
+        this.startAutoHideTimer();
     }
     
     setupEventListeners() {
-        document.querySelectorAll('.example-btn').forEach((btn, index) => {
+        document.querySelectorAll('.p-btn').forEach((btn, index) => {
             btn.addEventListener('click', () => this.loadExample(index));
         });
         
+        // Toggle button functionality
+        document.getElementById('toggleBtn').addEventListener('click', () => {
+            this.toggleControls();
+        });
+        
+        // Show controls on mouse movement near left edge
+        document.addEventListener('mousemove', (event) => {
+            if (event.clientX < 50) {
+                this.showControls();
+                this.startAutoHideTimer();
+            }
+        });
+        
+        // Keep controls visible when hovering over them
+        const controlsSection = document.getElementById('controls');
+        controlsSection.addEventListener('mouseenter', () => {
+            this.clearAutoHideTimer();
+        });
+        
+        controlsSection.addEventListener('mouseleave', () => {
+            this.startAutoHideTimer();
+        });
+        
         window.addEventListener('resize', () => {
-            const width = window.innerWidth - 200;
-            const height = window.innerHeight;
-            this.renderer.setSize(width, height);
-            this.uniforms.resolution.value.set(width, height);
+            // Canvas is always fullscreen now
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.uniforms.resolution.value.set(window.innerWidth, window.innerHeight);
         });
         
         const canvas = document.getElementById('canvas');
@@ -50,6 +75,44 @@ class GLSLPlayground {
             const y = 1.0 - (event.clientY - rect.top) / rect.height;
             this.uniforms.mouse.value.set(x, y);
         });
+    }
+    
+    showControls() {
+        const controls = document.getElementById('controls');
+        controls.classList.remove('hidden');
+        this.isControlsVisible = true;
+        // Canvas stays fullscreen
+    }
+    
+    hideControls() {
+        const controls = document.getElementById('controls');
+        controls.classList.add('hidden');
+        this.isControlsVisible = false;
+        // Canvas stays fullscreen
+    }
+    
+    toggleControls() {
+        if (this.isControlsVisible) {
+            this.hideControls();
+            this.clearAutoHideTimer();
+        } else {
+            this.showControls();
+            this.startAutoHideTimer();
+        }
+    }
+    
+    startAutoHideTimer() {
+        this.clearAutoHideTimer();
+        this.autoHideTimeout = setTimeout(() => {
+            this.hideControls();
+        }, 3000); // Hide after 3 seconds of inactivity
+    }
+    
+    clearAutoHideTimer() {
+        if (this.autoHideTimeout) {
+            clearTimeout(this.autoHideTimeout);
+            this.autoHideTimeout = null;
+        }
     }
     
     createExamples() {
@@ -310,6 +373,316 @@ void main() {
     
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }`.trim()
+            },
+            {
+                name: "Ego Dissolution",
+                vertexShader: vertexShader,
+                fragmentShader: `
+uniform float time;
+uniform vec2 resolution;
+uniform vec2 mouse;
+varying vec2 vUv;
+
+// Fractal noise for consciousness dissolution
+float noise(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+float fbm(vec2 st, int octaves) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+    
+    for (int i = 0; i < 8; i++) {
+        if (i >= octaves) break;
+        value += amplitude * noise(st * frequency + time * 0.1);
+        frequency *= 2.17;
+        amplitude *= 0.47;
+    }
+    return value;
+}
+
+// Consciousness-altering color palette
+vec3 egoColors(float t, float intensity) {
+    // Colors that trigger ego dissolution experiences
+    vec3 void_state = vec3(0.0, 0.0, 0.1);        // Deep void
+    vec3 consciousness = vec3(0.8, 0.0, 0.9);     // Purple consciousness
+    vec3 enlightenment = vec3(1.0, 1.0, 0.2);     // Golden light
+    vec3 unity = vec3(0.0, 0.9, 0.8);             // Cyan unity
+    vec3 transcendence = vec3(1.0, 0.4, 0.0);     // Orange transcendence
+    
+    float cycle = fract(t * 2.0 + time * 0.05) * intensity;
+    
+    if (cycle < 0.2) return mix(void_state, consciousness, cycle * 5.0);
+    else if (cycle < 0.4) return mix(consciousness, enlightenment, (cycle - 0.2) * 5.0);
+    else if (cycle < 0.6) return mix(enlightenment, unity, (cycle - 0.4) * 5.0);
+    else if (cycle < 0.8) return mix(unity, transcendence, (cycle - 0.6) * 5.0);
+    else return mix(transcendence, void_state, (cycle - 0.8) * 5.0);
+}
+
+void main() {
+    vec2 uv = vUv - 0.5;
+    
+    // Breathing reality effect - induces dissociation
+    float breath = sin(time * 0.3) * 0.2 + 1.0;
+    uv *= breath;
+    
+    // Multiple reality layers dissolving into each other
+    float layer1 = fbm(uv * 2.0, 6);
+    float layer2 = fbm(uv * 4.0 + vec2(5.2, 1.3), 5);
+    float layer3 = fbm(uv * 8.0 + vec2(23.15, 42.65), 4);
+    
+    // Ego dissolution pattern - self boundaries disappear
+    float dissolution = sin(layer1 * 6.28 + time * 0.5) * 
+                       cos(layer2 * 4.0 + time * 0.3) * 
+                       sin(layer3 * 8.0 + time * 0.7);
+    
+    // Consciousness fragmentation
+    vec2 fragUv = uv;
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        fragUv = abs(fragUv) - 0.1 - sin(time * 0.1 + fi) * 0.05;
+        fragUv *= 1.2 + sin(time * 0.07 + fi) * 0.1;
+    }
+    
+    float fragmentation = sin(length(fragUv) * 20.0 - time * 2.0);
+    
+    float combined = (dissolution + fragmentation + layer1) / 3.0;
+    
+    // Mouse represents conscious intention dissolving into the void
+    float mouseDist = length(uv - (mouse - 0.5) * 2.0);
+    float consciousness_leak = exp(-mouseDist * 1.5) * sin(time * 4.0) * 0.8;
+    combined += consciousness_leak;
+    
+    // Intensity builds toward complete ego death
+    float intensity = 1.0 + sin(time * 0.2) * 0.5;
+    
+    // Colors that trigger altered consciousness
+    vec3 color = egoColors(combined, intensity);
+    
+    // Reality fractures - sense of self breaks apart
+    float fracture = step(0.95, noise(uv * 100.0 + time * 3.0));
+    color += fracture * vec3(3.0, 3.0, 3.0);
+    
+    // Transcendental glow - experience of unity consciousness
+    float transcendence = exp(-length(uv) * 0.8) * sin(time * 1.5);
+    color += transcendence * egoColors(combined + 0.5, intensity) * 0.6;
+    
+    // Breathing light - mystical experience
+    color *= 0.7 + 0.5 * sin(time * 0.8);
+    
+    gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+}`.trim()
+            },
+            {
+                name: "Synaptic Chaos",
+                vertexShader: vertexShader,
+                fragmentShader: `
+uniform float time;
+uniform vec2 resolution;
+uniform vec2 mouse;
+varying vec2 vUv;
+
+float random(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+// Neural network firing patterns
+float neuralNoise(vec2 st, float t) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+    
+    float a = random(i + sin(t * 0.1));
+    float b = random(i + vec2(1.0, 0.0) + sin(t * 0.13));
+    float c = random(i + vec2(0.0, 1.0) + sin(t * 0.17));
+    float d = random(i + vec2(1.0, 1.0) + sin(t * 0.19));
+    
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    
+    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+
+// Psychedelic brain chemistry colors
+vec3 synapticColors(float t, float chaos) {
+    // Colors representing neurotransmitter floods
+    vec3 dopamine = vec3(1.0, 0.3, 0.8);     // Pink dopamine rush
+    vec3 serotonin = vec3(0.2, 0.9, 0.3);    // Green serotonin
+    vec3 dmt = vec3(0.9, 0.1, 1.0);          // Purple DMT
+    vec3 norepinephrine = vec3(1.0, 0.8, 0.0); // Yellow norepinephrine
+    vec3 gaba = vec3(0.0, 0.6, 1.0);         // Blue GABA calm
+    
+    float neurotransmitter = fract(t * chaos + time * 0.1);
+    
+    if (neurotransmitter < 0.2) return mix(dopamine, serotonin, neurotransmitter * 5.0);
+    else if (neurotransmitter < 0.4) return mix(serotonin, dmt, (neurotransmitter - 0.2) * 5.0);
+    else if (neurotransmitter < 0.6) return mix(dmt, norepinephrine, (neurotransmitter - 0.4) * 5.0);
+    else if (neurotransmitter < 0.8) return mix(norepinephrine, gaba, (neurotransmitter - 0.6) * 5.0);
+    else return mix(gaba, dopamine, (neurotransmitter - 0.8) * 5.0);
+}
+
+void main() {
+    vec2 uv = vUv;
+    
+    // Chaotic neural firing patterns
+    float chaos_level = 2.0 + sin(time * 0.1) * 1.5;
+    
+    // Multiple overlapping neural networks
+    float network1 = neuralNoise(uv * 8.0, time * 2.0);
+    float network2 = neuralNoise(uv * 16.0 + vec2(10.0), time * 1.5);
+    float network3 = neuralNoise(uv * 32.0 + vec2(20.0), time * 3.0);
+    
+    // Synaptic storms - rapid firing
+    float storm1 = sin(uv.x * 40.0 + time * 8.0) * cos(uv.y * 30.0 + time * 6.0);
+    float storm2 = cos(uv.x * 25.0 - time * 7.0) * sin(uv.y * 35.0 - time * 9.0);
+    
+    // Electrical discharges across synapses
+    float discharge1 = step(0.8, sin(network1 * 20.0 + time * 10.0));
+    float discharge2 = step(0.85, cos(network2 * 15.0 + time * 12.0));
+    
+    float neural_activity = (network1 + network2 + network3) / 3.0;
+    neural_activity += (storm1 + storm2) * 0.3;
+    neural_activity += (discharge1 + discharge2) * 0.5;
+    
+    // Mouse represents external stimuli overwhelming the nervous system
+    float mouseDist = length(uv - mouse);
+    float overstimulation = exp(-mouseDist * 3.0) * sin(time * 15.0) * chaos_level;
+    neural_activity += overstimulation * 0.4;
+    
+    // Chaotic neurotransmitter floods
+    vec3 color = synapticColors(neural_activity, chaos_level);
+    
+    // Electrical arcing between neurons
+    float arc1 = exp(-abs(sin(uv.x * 20.0 + time * 5.0) - uv.y) * 30.0);
+    float arc2 = exp(-abs(cos(uv.y * 15.0 + time * 4.0) - uv.x) * 25.0);
+    
+    color += (arc1 + arc2) * synapticColors(neural_activity + 0.3, chaos_level) * 0.6;
+    
+    // Action potential spikes
+    float spike = step(0.9, neuralNoise(uv * 50.0, time * 5.0));
+    color += spike * vec3(2.0, 2.0, 1.5);
+    
+    // Synaptic chaos intensity modulation
+    float intensity = 0.8 + 0.6 * sin(time * 3.0) * sin(time * 1.7);
+    color *= intensity;
+    
+    // Rapid neurotransmitter cycling
+    float cycling = sin(time * 20.0) * 0.02;
+    color.r += cycling;
+    color.g -= cycling * 0.5;
+    color.b += cycling * 0.7;
+    
+    gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+}`.trim()
+            },
+            {
+                name: "The Lurking Fear",
+                vertexShader: vertexShader,
+                fragmentShader: `
+uniform float time;
+uniform vec2 resolution;
+uniform vec2 mouse;
+varying vec2 vUv;
+
+float noise(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+// Disturbing noise that never settles
+float unsettlingNoise(vec2 st, float t) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+    
+    // Constantly shifting, never predictable
+    float a = noise(i + sin(t * 0.7) * 10.0);
+    float b = noise(i + vec2(1.0, 0.0) + cos(t * 0.83) * 10.0);
+    float c = noise(i + vec2(0.0, 1.0) + sin(t * 1.1) * 10.0);
+    float d = noise(i + vec2(1.0, 1.0) + cos(t * 1.3) * 10.0);
+    
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    
+    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+
+// Horror color palette that triggers primal fear
+vec3 fearColors(float t, float dread) {
+    // Colors associated with fear, death, and the unknown
+    vec3 void_black = vec3(0.02, 0.0, 0.05);      // Almost black void
+    vec3 blood_red = vec3(0.6, 0.05, 0.1);        // Dried blood
+    vec3 sickly_green = vec3(0.1, 0.3, 0.08);     // Decay green
+    vec3 bone_white = vec3(0.9, 0.85, 0.8);       // Bone white
+    vec3 bruise_purple = vec3(0.2, 0.1, 0.4);     // Bruise purple
+    
+    float fear_cycle = fract(t * dread + time * 0.03);
+    
+    if (fear_cycle < 0.2) return mix(void_black, blood_red, fear_cycle * 5.0);
+    else if (fear_cycle < 0.4) return mix(blood_red, sickly_green, (fear_cycle - 0.2) * 5.0);
+    else if (fear_cycle < 0.6) return mix(sickly_green, bone_white, (fear_cycle - 0.4) * 5.0);
+    else if (fear_cycle < 0.8) return mix(bone_white, bruise_purple, (fear_cycle - 0.6) * 5.0);
+    else return mix(bruise_purple, void_black, (fear_cycle - 0.8) * 5.0);
+}
+
+void main() {
+    vec2 uv = vUv;
+    
+    // Creeping dread builds over time
+    float dread_level = 1.0 + sin(time * 0.05) * 0.5 + time * 0.01;
+    
+    // Something moving in the shadows
+    float shadow1 = unsettlingNoise(uv * 3.0, time * 0.3);
+    float shadow2 = unsettlingNoise(uv * 6.0 + vec2(13.7, 9.1), time * 0.2);
+    float shadow3 = unsettlingNoise(uv * 12.0 + vec2(27.3, 18.9), time * 0.5);
+    
+    // Presence watching you - creates paranoia
+    vec2 eye_position1 = vec2(0.3 + sin(time * 0.1) * 0.1, 0.7 + cos(time * 0.13) * 0.1);
+    vec2 eye_position2 = vec2(0.7 + sin(time * 0.17) * 0.1, 0.3 + cos(time * 0.11) * 0.1);
+    
+    float eye1 = exp(-length(uv - eye_position1) * 20.0) * (0.5 + 0.5 * sin(time * 2.0));
+    float eye2 = exp(-length(uv - eye_position2) * 25.0) * (0.5 + 0.5 * sin(time * 2.3 + 3.14));
+    
+    // Crawling, writhing motion - like insects or tentacles
+    float crawl1 = sin(uv.x * 30.0 + time * 1.5 + shadow1 * 10.0);
+    float crawl2 = cos(uv.y * 25.0 + time * 1.2 + shadow2 * 8.0);
+    
+    // Things moving just out of sight
+    float peripheral1 = step(0.95, unsettlingNoise(uv * 50.0, time * 3.0));
+    float peripheral2 = step(0.97, unsettlingNoise(uv * 70.0 + vec2(50.0), time * 2.5));
+    
+    float lurking_presence = (shadow1 + shadow2 + shadow3) / 3.0;
+    lurking_presence += (eye1 + eye2) * 2.0;
+    lurking_presence += (crawl1 + crawl2) * 0.2;
+    lurking_presence += (peripheral1 + peripheral2) * 0.5;
+    
+    // Mouse movement attracts the lurking horror
+    float mouseDist = length(uv - mouse);
+    float attraction = exp(-mouseDist * 2.0) * sin(time * 6.0) * dread_level;
+    lurking_presence += attraction * 0.6;
+    
+    // Fear response colors
+    vec3 color = fearColors(lurking_presence, dread_level);
+    
+    // Sudden flashes of terror
+    float terror_flash = step(0.99, unsettlingNoise(vec2(time * 10.0), time));
+    color += terror_flash * vec3(1.0, 0.8, 0.8) * 2.0;
+    
+    // Breathing darkness - claustrophobic effect
+    float claustrophobia = 0.3 + 0.4 * sin(time * 0.7);
+    color *= claustrophobia;
+    
+    // Something approaching from the edges
+    float edge_distance = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+    float approaching = exp(-edge_distance * 3.0) * sin(time * 1.0);
+    color += approaching * fearColors(lurking_presence + 0.5, dread_level) * 0.3;
+    
+    // Paranoia flicker - makes you feel watched
+    float paranoia = 0.9 + 0.2 * sin(time * 13.0) * sin(time * 7.0);
+    color *= paranoia;
+    
+    // Desaturation toward terror
+    float terror_desaturation = sin(time * 0.2) * 0.1;
+    color = mix(color, vec3(dot(color, vec3(0.299, 0.587, 0.114))), terror_desaturation);
+    
+    gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+}`.trim()
             }
         ];
     }
@@ -318,7 +691,7 @@ void main() {
         this.currentExample = index;
         const example = this.examples[index];
         
-        document.querySelectorAll('.example-btn').forEach((btn, i) => {
+        document.querySelectorAll('.p-btn').forEach((btn, i) => {
             btn.classList.toggle('active', i === index);
         });
         

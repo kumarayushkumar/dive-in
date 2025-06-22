@@ -15,6 +15,7 @@
       #container {
         display: flex;
         height: 100vh;
+        position: relative;
       }
 
       .controls-section {
@@ -23,10 +24,49 @@
         padding: 20px;
         display: flex;
         flex-direction: column;
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 100;
+        transition: transform 0.3s ease-in-out;
+        box-sizing: border-box;
+      }
+
+      .controls-section.hidden {
+        transform: translateX(-200px);
+      }
+
+      .toggle-btn {
+        position: absolute;
+        right: -30px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #007acc;
+        color: white;
+        border: none;
+        width: 30px;
+        height: 60px;
+        border-radius: 0 8px 8px 0;
+        cursor: pointer;
+        font-size: 12px;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transition: all 0.3s ease;
+        z-index: 10;
+      }
+
+      .toggle-btn:hover {
+        background: #0099ff;
+        transform: translateY(-50%) scale(1.05);
       }
 
       #canvas-panel {
-        flex: 1;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
       }
 
       canvas {
@@ -35,7 +75,7 @@
         height: 100%;
       }
 
-      .editor-header {
+      .control-header {
         color: #fff;
         font-size: 16px;
         font-weight: bold;
@@ -43,13 +83,13 @@
         margin-bottom: 12px;
       }
 
-      #example-buttons {
+      #p-btns {
         display: flex;
         flex-direction: column;
         gap: 12px;
       }
 
-      .example-btn {
+      .p-btn {
         background: #404040;
         color: #d4d4d4;
         border: 1px solid #555;
@@ -60,12 +100,12 @@
         transition: all 0.3s;
       }
 
-      .example-btn:hover {
+      .p-btn:hover {
         background: #505050;
         transform: translateY(-1px);
       }
 
-      .example-btn.active {
+      .p-btn.active {
         background: #007acc;
         border-color: #007acc;
         color: white;
@@ -75,16 +115,20 @@
   </head>
   <body>
     <div id="container">
-      <div class="controls-section">
-        <div class="editor-header">Moods</div>
-        <div id="example-buttons">
-          <button class="example-btn active" data-example="0">
+      <div class="controls-section" id="controls">
+        <button class="toggle-btn" id="toggleBtn">≡</button>
+        <div class="control-header">Moods</div>
+        <div id="p-btns">
+          <button class="p-btn active" data-example="0">
             Infinite Psychedelic
           </button>
-          <button class="example-btn" data-example="1">
+          <button class="p-btn" data-example="1">
             Cosmic Kaleidoscope
           </button>
-          <button class="example-btn" data-example="2">Liquid Dreams</button>
+          <button class="p-btn" data-example="2">Liquid Dreams</button>
+          <button class="p-btn" data-example="3">Ego Dissolution</button>
+          <button class="p-btn" data-example="4">Synaptic Chaos</button>
+          <button class="p-btn" data-example="5">The Lurking Fear</button>
         </div>
       </div>
       <div id="canvas-panel">
