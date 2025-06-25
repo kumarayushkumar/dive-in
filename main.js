@@ -1,122 +1,124 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 class GLSLPlayground {
-    constructor() {
-        this.scene = new THREE.Scene();
-        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        this.renderer = new THREE.WebGLRenderer({ 
-            canvas: document.getElementById('canvas'),
-            antialias: true 
-        });
-        
-        // Canvas is now fullscreen
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        
-        this.geometry = new THREE.PlaneGeometry(2, 2);
-        this.material = null;
-        this.mesh = null;
-        
-        this.startTime = Date.now();
-        this.uniforms = {
-            time: { value: 0.0 },
-            resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-            mouse: { value: new THREE.Vector2(0.5, 0.5) }
-        };
-        
-        this.currentExample = 0;
-        this.examples = this.createExamples();
-        this.isControlsVisible = true;
-        this.autoHideTimeout = null;
-        
-        this.setupEventListeners();
-        this.loadExample(0);
-        this.animate();
+  constructor() {
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    this.renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById("canvas"),
+      antialias: true,
+    });
+
+    // Canvas is now fullscreen
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    this.geometry = new THREE.PlaneGeometry(2, 2);
+    this.material = null;
+    this.mesh = null;
+
+    this.startTime = Date.now();
+    this.uniforms = {
+      time: { value: 0.0 },
+      resolution: {
+        value: new THREE.Vector2(window.innerWidth, window.innerHeight),
+      },
+      mouse: { value: new THREE.Vector2(0.5, 0.5) },
+    };
+
+    this.currentExample = 0;
+    this.examples = this.createExamples();
+    this.isControlsVisible = true;
+    this.autoHideTimeout = null;
+
+    this.setupEventListeners();
+    this.loadExample(0);
+    this.animate();
+    this.startAutoHideTimer();
+  }
+
+  setupEventListeners() {
+    document.querySelectorAll(".p-btn").forEach((btn, index) => {
+      btn.addEventListener("click", () => this.loadExample(index));
+    });
+
+    // Toggle button functionality
+    document.getElementById("toggleBtn").addEventListener("click", () => {
+      this.toggleControls();
+    });
+
+    // Show controls on mouse movement near left edge
+    document.addEventListener("mousemove", (event) => {
+      if (event.clientX < 50) {
+        this.showControls();
         this.startAutoHideTimer();
+      }
+    });
+
+    // Keep controls visible when hovering over them
+    const controlsSection = document.getElementById("controls");
+    controlsSection.addEventListener("mouseenter", () => {
+      this.clearAutoHideTimer();
+    });
+
+    controlsSection.addEventListener("mouseleave", () => {
+      this.startAutoHideTimer();
+    });
+
+    window.addEventListener("resize", () => {
+      // Canvas is always fullscreen now
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.uniforms.resolution.value.set(window.innerWidth, window.innerHeight);
+    });
+
+    const canvas = document.getElementById("canvas");
+    canvas.addEventListener("mousemove", (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width;
+      const y = 1.0 - (event.clientY - rect.top) / rect.height;
+      this.uniforms.mouse.value.set(x, y);
+    });
+  }
+
+  showControls() {
+    const controls = document.getElementById("controls");
+    controls.classList.remove("hidden");
+    this.isControlsVisible = true;
+    // Canvas stays fullscreen
+  }
+
+  hideControls() {
+    const controls = document.getElementById("controls");
+    controls.classList.add("hidden");
+    this.isControlsVisible = false;
+    // Canvas stays fullscreen
+  }
+
+  toggleControls() {
+    if (this.isControlsVisible) {
+      this.hideControls();
+      this.clearAutoHideTimer();
+    } else {
+      this.showControls();
+      this.startAutoHideTimer();
     }
-    
-    setupEventListeners() {
-        document.querySelectorAll('.p-btn').forEach((btn, index) => {
-            btn.addEventListener('click', () => this.loadExample(index));
-        });
-        
-        // Toggle button functionality
-        document.getElementById('toggleBtn').addEventListener('click', () => {
-            this.toggleControls();
-        });
-        
-        // Show controls on mouse movement near left edge
-        document.addEventListener('mousemove', (event) => {
-            if (event.clientX < 50) {
-                this.showControls();
-                this.startAutoHideTimer();
-            }
-        });
-        
-        // Keep controls visible when hovering over them
-        const controlsSection = document.getElementById('controls');
-        controlsSection.addEventListener('mouseenter', () => {
-            this.clearAutoHideTimer();
-        });
-        
-        controlsSection.addEventListener('mouseleave', () => {
-            this.startAutoHideTimer();
-        });
-        
-        window.addEventListener('resize', () => {
-            // Canvas is always fullscreen now
-            this.renderer.setSize(window.innerWidth, window.innerHeight);
-            this.uniforms.resolution.value.set(window.innerWidth, window.innerHeight);
-        });
-        
-        const canvas = document.getElementById('canvas');
-        canvas.addEventListener('mousemove', (event) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = (event.clientX - rect.left) / rect.width;
-            const y = 1.0 - (event.clientY - rect.top) / rect.height;
-            this.uniforms.mouse.value.set(x, y);
-        });
+  }
+
+  startAutoHideTimer() {
+    this.clearAutoHideTimer();
+    this.autoHideTimeout = setTimeout(() => {
+      this.hideControls();
+    }, 3000); // Hide after 3 seconds of inactivity
+  }
+
+  clearAutoHideTimer() {
+    if (this.autoHideTimeout) {
+      clearTimeout(this.autoHideTimeout);
+      this.autoHideTimeout = null;
     }
-    
-    showControls() {
-        const controls = document.getElementById('controls');
-        controls.classList.remove('hidden');
-        this.isControlsVisible = true;
-        // Canvas stays fullscreen
-    }
-    
-    hideControls() {
-        const controls = document.getElementById('controls');
-        controls.classList.add('hidden');
-        this.isControlsVisible = false;
-        // Canvas stays fullscreen
-    }
-    
-    toggleControls() {
-        if (this.isControlsVisible) {
-            this.hideControls();
-            this.clearAutoHideTimer();
-        } else {
-            this.showControls();
-            this.startAutoHideTimer();
-        }
-    }
-    
-    startAutoHideTimer() {
-        this.clearAutoHideTimer();
-        this.autoHideTimeout = setTimeout(() => {
-            this.hideControls();
-        }, 3000); // Hide after 3 seconds of inactivity
-    }
-    
-    clearAutoHideTimer() {
-        if (this.autoHideTimeout) {
-            clearTimeout(this.autoHideTimeout);
-            this.autoHideTimeout = null;
-        }
-    }
-    
-    createExamples() {
-        const vertexShader = `
+  }
+
+  createExamples() {
+    const vertexShader = `
 varying vec2 vUv;
 
 void main() {
@@ -124,11 +126,11 @@ void main() {
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`.trim();
 
-        return [
-            {
-                name: "Infinite Psychedelic",
-                vertexShader: vertexShader,
-                fragmentShader: `
+    return [
+      {
+        name: "Infinite Psychedelic",
+        vertexShader: vertexShader,
+        fragmentShader: `
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 mouse;
@@ -212,12 +214,12 @@ void main() {
     color *= sin(slowTime) * 0.1 + 1.0;
     
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
-}`.trim()
-            },
-            {
-                name: "Cosmic Kaleidoscope",
-                vertexShader: vertexShader,
-                fragmentShader: `
+}`.trim(),
+      },
+      {
+        name: "Cosmic Kaleidoscope",
+        vertexShader: vertexShader,
+        fragmentShader: `
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 mouse;
@@ -286,12 +288,12 @@ void main() {
     color += exp(-radius * 2.0) * cosmicPalette(combined + 0.5) * 0.3;
     
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
-}`.trim()
-            },
-            {
-                name: "Liquid Dreams",
-                vertexShader: vertexShader,
-                fragmentShader: `
+}`.trim(),
+      },
+      {
+        name: "Liquid Dreams",
+        vertexShader: vertexShader,
+        fragmentShader: `
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 mouse;
@@ -372,12 +374,12 @@ void main() {
     color *= 0.8 + 0.4 * sin(time * 0.5);
     
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
-}`.trim()
-            },
-            {
-                name: "Ego Dissolution",
-                vertexShader: vertexShader,
-                fragmentShader: `
+}`.trim(),
+      },
+      {
+        name: "Ego Dissolution",
+        vertexShader: vertexShader,
+        fragmentShader: `
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 mouse;
@@ -472,12 +474,12 @@ void main() {
     color *= 0.7 + 0.5 * sin(time * 0.8);
     
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
-}`.trim()
-            },
-            {
-                name: "Synaptic Chaos",
-                vertexShader: vertexShader,
-                fragmentShader: `
+}`.trim(),
+      },
+      {
+        name: "Synaptic Chaos",
+        vertexShader: vertexShader,
+        fragmentShader: `
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 mouse;
@@ -572,12 +574,12 @@ void main() {
     color.b += cycling * 0.7;
     
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
-}`.trim()
-            },
-            {
-                name: "The Lurking Fear",
-                vertexShader: vertexShader,
-                fragmentShader: `
+}`.trim(),
+      },
+      {
+        name: "The Lurking Fear",
+        vertexShader: vertexShader,
+        fragmentShader: `
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 mouse;
@@ -682,12 +684,12 @@ void main() {
     color = mix(color, vec3(dot(color, vec3(0.299, 0.587, 0.114))), terror_desaturation);
     
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
-}`.trim()
-            },
-            {
-                name: "Nightmare Flesh",
-                vertexShader: vertexShader,
-                fragmentShader: `
+}`.trim(),
+      },
+      {
+        name: "Nightmare Flesh",
+        vertexShader: vertexShader,
+        fragmentShader: `
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 mouse;
@@ -824,50 +826,53 @@ void main() {
     color += spasm * vec3(1.5, 0.5, 0.5);
     
     gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
-}`.trim()
-            }
-        ];
+}`.trim(),
+      },
+    ];
+  }
+
+  loadExample(index) {
+    this.currentExample = index;
+    const example = this.examples[index];
+
+    document.querySelectorAll(".p-btn").forEach((btn, i) => {
+      btn.classList.toggle("active", i === index);
+    });
+
+    this.compileShaders(example.vertexShader, example.fragmentShader);
+  }
+
+  compileShaders(vertexShader, fragmentShader) {
+    try {
+      if (this.mesh) {
+        this.scene.remove(this.mesh);
+        this.material.dispose();
+      }
+
+      this.material = new THREE.ShaderMaterial({
+        uniforms: this.uniforms,
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+      });
+
+      this.mesh = new THREE.Mesh(this.geometry, this.material);
+      this.scene.add(this.mesh);
+
+      console.log(
+        `Example "${
+          this.examples[this.currentExample].name
+        }" loaded successfully!`
+      );
+    } catch (error) {
+      console.error("Shader compilation error:", error);
     }
-    
-    loadExample(index) {
-        this.currentExample = index;
-        const example = this.examples[index];
-        
-        document.querySelectorAll('.p-btn').forEach((btn, i) => {
-            btn.classList.toggle('active', i === index);
-        });
-        
-        this.compileShaders(example.vertexShader, example.fragmentShader);
-    }
-    
-    compileShaders(vertexShader, fragmentShader) {
-        try {
-            if (this.mesh) {
-                this.scene.remove(this.mesh);
-                this.material.dispose();
-            }
-            
-            this.material = new THREE.ShaderMaterial({
-                uniforms: this.uniforms,
-                vertexShader: vertexShader,
-                fragmentShader: fragmentShader
-            });
-            
-            this.mesh = new THREE.Mesh(this.geometry, this.material);
-            this.scene.add(this.mesh);
-            
-            console.log(`Example "${this.examples[this.currentExample].name}" loaded successfully!`);
-            
-        } catch (error) {
-            console.error('Shader compilation error:', error);
-        }
-    }
-    
-    animate() {
-        requestAnimationFrame(() => this.animate());
-        this.uniforms.time.value = (Date.now() - this.startTime) / 1000.0;
-        this.renderer.render(this.scene, this.camera);
-    }
+  }
+
+  animate() {
+    requestAnimationFrame(() => this.animate());
+    this.uniforms.time.value = (Date.now() - this.startTime) / 1000.0;
+    this.renderer.render(this.scene, this.camera);
+  }
 }
 
-window.addEventListener('load', () => new GLSLPlayground());
+window.addEventListener("load", () => new GLSLPlayground());
